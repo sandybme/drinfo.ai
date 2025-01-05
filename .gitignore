@@ -1,0 +1,29 @@
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Docker files
+*.log
+*.pid
+*.bak
+.dockerignore
+
+# System files
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# jupyter notebooks
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+notebooks/
