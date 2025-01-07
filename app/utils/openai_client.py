@@ -2,13 +2,23 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
+
 # Initialize OpenAI client
 client = OpenAI()
 client.api_key = os.getenv("OPENAI_API_KEY")
 
 def parse_query_with_llm(doctor_query: str) -> str:
-    """Convert a natural language query into a structured PubMed query."""
+    """
+    Convert a natural language query into a structured PubMed query.
+
+    Args:
+        doctor_query (str): Doctor's clinical question in natural language.
+
+    Returns:
+        str: Structured PubMed query syntax.
+    """
     prompt = f"""
     A doctor is looking for clinical evidence. Convert the following question into a PubMed query:
     Question: "{doctor_query}"
@@ -24,7 +34,15 @@ def parse_query_with_llm(doctor_query: str) -> str:
     return response.choices[0].message.content.strip()
 
 def summarize_with_llm(articles: list) -> str:
-    """Summarize findings from PubMed articles."""
+    """
+    Summarize findings from a list of PubMed articles.
+
+    Args:
+        articles (list): List of dictionaries containing article metadata.
+
+    Returns:
+        str: Summary of findings, including references.
+    """
     content = "\n".join([
         f"Title: {article['title']}\nAbstract: {article['abstract']}\nLink: {article['link']}"
         for article in articles
@@ -36,7 +54,7 @@ def summarize_with_llm(articles: list) -> str:
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "Summarize PubMed findings and include references as links."},
+            {"role": "system", "content": "Summarize PubMed findings in an elaborate systematic way. Always include references as links."},
             {"role": "user", "content": prompt}
         ]
     )
