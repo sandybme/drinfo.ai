@@ -18,6 +18,6 @@ COPY supervisord.conf /etc/supervisord.conf
 
 # Expose ports for FastAPI and Streamlit
 EXPOSE 8000 8501
-
+ENV ENV=L
 # Start both FastAPI and Streamlit using supervisord
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]

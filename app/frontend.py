@@ -26,7 +26,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Backend API URL (set in .env)
-API_URL = os.getenv("API_URL")
+ENV = os.getenv("ENV") 
+if ENV == "L":
+    API_URL = os.getenv("API_URL_LOCAL")
+else:
+    API_URL = os.getenv("API_URL_PROD")
+
 
 # Streamlit App Configuration
 st.set_page_config(
