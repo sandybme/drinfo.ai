@@ -29,28 +29,31 @@ docker_instructions = """
 To build and push the Docker image for production, run the following commands:
 
 ### Build the Docker Image
+
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t sandy9827/drinfo-ai:latest --build-arg ENV=P --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t docker-user-id/drinfo-ai:latest --build-arg ENV=P --push .
 ```
 
 - `--platform` specifies the platform for which the image is built (amd64, arm64).
 - `--build-arg ENV=P` sets the environment to production during the build.
 - `--push` pushes the image to Docker Hub after building.
 
-### Pull and Run Docker Image on EC2 Instance
+### Pull and Run Docker Image on EC2 Instance or remote platforms
 
 - **Pull the Docker Image** from Docker Hub:
 ```bash
-docker pull sandy9827/drinfo-ai:latest
+docker pull docker-user-id/drinfo-ai:latest
 ```
 
 - **Run the Docker container** in detached mode:
 ```bash
-docker run -d -p 8000:8000 -p 8501:8501 -e ENV=P --name drinfo-ai sandy9827/drinfo-ai:latest
+docker run -d -p 8000:8000 -p 8501:8501 -e ENV=P --name drinfo-ai docker-user-id/drinfo-ai:latest
 ```
 - `-d` runs the container in detached mode.
 - `-p` maps the container ports to the host.
 - `-e ENV=P` sets the environment to production.
+
+
 
 ### Stopping the Docker Container
 ```bash
@@ -64,7 +67,16 @@ docker rm drinfo-ai
 
 ## 2. Running the App Locally
 
-If you wish to run the app locally using FastAPI and Streamlit:
+### Using Docker Container:
+- **Run the Docker container** in detached mode:
+```bash
+docker run -d -p 8000:8000 -p 8501:8501 -e ENV=L --name drinfo-ai docker-user-id/drinfo-ai:latest
+```
+- `-d` runs the container in detached mode.
+- `-p` maps the container ports to the host.
+- `-e ENV=L` sets the environment to local.
+
+### If you wish to run the app locally using FastAPI and Streamlit:
 
 - Install the dependencies by running:
 ```bash
@@ -82,6 +94,6 @@ streamlit run app/frontend.py
 ```
 
 - Open the app in your browser: `http://localhost:8501`
-"""
+
 
 
