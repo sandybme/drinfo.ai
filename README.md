@@ -7,7 +7,7 @@ DrInfo.ai helps medical professionals and researchers get answers to clinical qu
 
 ## .env.example
 
-Before running the application, you should create a `.env` file based on the `.env.example` provided. This file contains environment variables needed for the application to function correctly.
+Before running the application, you should create a `.env` file based on the `.env.example` provided. This file contains environment variables needed for the application to function correctly. (Rename this file to just .env)
 
 Create a `.env` file in the root directory and update it with your specific details.
 
@@ -20,9 +20,9 @@ OPENAI_API_KEY=your_openai_api_key  # Your OpenAI API key
 EMAIL=your_email  # Your email for PubMed requests
 ```
 
-## Docker Setup for DrInfo.ai
+## Running the applicaton
 
-## 1. Build and Push Docker Image
+## 1. Using docker in production server
 
 To build and push the Docker image for production, run the following commands:
 
