@@ -18,11 +18,9 @@ API_URL_PROD=http://your-production-backend-url/api/chat  # Production backend U
 ENV=P  # Set to 'L' for local environment or 'P' for production environment
 OPENAI_API_KEY=your_openai_api_key  # Your OpenAI API key
 EMAIL=your_email  # Your email for PubMed requests
+```
 
-# Let's create the Docker-specific instructions as a separate text
-
-docker_instructions = """
-# Docker Setup for DrInfo.ai
+## Docker Setup for DrInfo.ai
 
 ## 1. Build and Push Docker Image
 
