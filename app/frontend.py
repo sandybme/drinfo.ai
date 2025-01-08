@@ -1,46 +1,22 @@
-"""
-streamlit_app.py
-
-This module contains the Streamlit-based frontend for the DrInfo.ai application. It allows users
-to submit clinical queries and displays summarized responses retrieved from a backend API.
-
-Modules:
-- `requests`: Handles API requests to the backend.
-- `dotenv`: Loads environment variables for configuration.
-- `streamlit`: Provides the frontend framework.
-
-Environment Variables:
-- API_URL: The base URL of the FastAPI backend.
-
-Author:
-- Your Sandhanakrishnan Ravichandran
-- Date: 2025-01-05
-"""
-
 import streamlit as st
 import requests
 import os
 from dotenv import load_dotenv
-
-# Load environment variables from .env file
+import re
 load_dotenv()
 
-# Backend API URL (set in .env)
-ENV = os.getenv("ENV") 
+# API URL (Local or Prod)
+ENV = os.getenv("ENV")
+ENV = "L"
 if ENV == "L":
     API_URL = os.getenv("API_URL_LOCAL")
 else:
     API_URL = os.getenv("API_URL_PROD")
-
-
+# print(API_URL)
 # Streamlit App Configuration
-st.set_page_config(
-    page_title="DrInfo.ai",
-    layout="wide",
-    page_icon="🩺",
-)
+st.set_page_config(page_title="DrInfo.ai", layout="wide")
 
-# Initialize session state for chat history
+# Initialize session state for messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -48,87 +24,61 @@ if "messages" not in st.session_state:
 st.title("DrInfo.ai: Your Clinical Query Assistant")
 st.markdown(
     """
-    **DrInfo.ai** is a search engine designed to assist medical professionals and researchers 
-    by providing concise, summarized answers to clinical queries. Ask your questions and retrieve 
-    answers powered by PubMed and other trusted sources.
+    **DrInfo.ai** helps medical professionals and researchers get answers to clinical queries 
+    from trusted sources like PubMed. Ask a question, and we will summarize the findings for you.
     """
 )
 
+# User Input Section
+with st.container():
+    st.markdown("### Ask Your Clinical Question")
+    user_input = st.text_input("Enter your question here:", placeholder="e.g., What are the latest treatments for diabetes?")
+    submit_button = st.button("Search")
 
-def submit_query(user_input: str):
+# Query Submission Logic
+if submit_button:
+    if user_input.strip():
+        # Step 1: Display User Query in the Chat
+        st.session_state.messages = [{"role": "user", "content": user_input}]
+        # if "full_summary" not in st.session_state:
+        st.session_state.full_summary = ""
+        
+        # Step 2: Set up placeholders for each step
+        pubmed_query_placeholder = st.empty()
+        retrieving_placeholder = st.empty()
+        summary_placeholder = st.empty()
+
+        # Step 3: Request backend to process the query
+        with st.spinner("Processing..."):
+            try:
+                response = requests.post(f"{API_URL}", json={"user_message": user_input}, stream=True)
+                
+                for line in response.iter_lines():
+                    if line:
+                        message = line.decode("utf-8").strip()
+                        message = re.sub(r'^data[:\s]*', '', message).strip()
+                        if message.startswith("Formulating PubMed query"):
+                            message = message.replace('Formulating PubMed query:', '').strip() 
+                            pubmed_query_placeholder.markdown(f"**Formulated PubMed query:** {message}")
+                        elif message.startswith("Searching PubMed"):
+                            retrieving_placeholder.markdown(f"**Retrieving articles:** {message}")
+                        elif message:  # This checks if the message is not empty
+                        # Append the current message to the full summary in session state
+                            st.session_state.full_summary += message + "\n"
+                            # Update the summary placeholder with the full summary
+                            summary_placeholder.markdown(f"**Summary:**\n{st.session_state.full_summary}")
+                            print(message)
+            except requests.exceptions.RequestException as e:
+                st.error(f"Error connecting to the backend: {e}")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
+    else:
+        st.warning("Please enter a valid query!")
+
+# Footer Section
+st.markdown(
     """
-    Submits the user's clinical query to the FastAPI backend and updates the session state with the response.
-
-    Args:
-        user_input (str): The clinical question entered by the user.
-
-    Raises:
-        requests.exceptions.RequestException: If there is a problem connecting to the backend.
+    ---
+    **Disclaimer:** This tool provides information from publicly available sources. It does not replace professional medical advice. Always consult a healthcare provider for medical concerns.
     """
-    # Clear previous chat history
-    st.session_state.messages = [{"role": "user", "content": user_input}]
-
-    # Call FastAPI backend
-    with st.spinner("Retrieving information, please wait..."):
-        try:
-            # Send the query to the backend
-            response = requests.post(API_URL, json={"user_message": user_input})
-            response.raise_for_status()  # Raise an error for HTTP issues
-
-            # Parse response
-            data = response.json()
-            st.session_state.messages.append(
-                {"role": "bot", "content": data.get("summary", "No summary provided.")}
-            )
-        except requests.exceptions.RequestException as e:
-            st.error(f"Error connecting to the backend: {e}")
-        except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
-
-
-def display_chat_history():
-    """
-    Displays the chat history (user queries and bot responses) on the Streamlit frontend.
-    """
-    st.markdown("### Search Results")
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            st.markdown(f"**You:** {message['content']}")
-        elif message["role"] == "bot":
-            st.markdown(f"**DrInfo.ai:** {message['content']}")
-
-
-def main():
-    """
-    Main function for rendering the Streamlit frontend.
-    """
-    # User Input Section
-    with st.container():
-        st.markdown("### Ask Your Clinical Question")
-        user_input = st.text_input(
-            "Enter your question here:", placeholder="e.g., What are the latest treatments for diabetes?"
-        )
-        submit_button = st.button("Submit")
-
-    # Query Submission Logic
-    if submit_button:
-        if user_input.strip():
-            submit_query(user_input)
-        else:
-            st.warning("Please enter a valid query!")
-
-    # Display Chat History
-    display_chat_history()
-
-    # Footer Section
-    st.markdown(
-        """
-        ---
-        **Disclaimer:** This tool provides information from publicly available sources.
-        It does not replace professional medical advice. Always consult a healthcare provider for medical concerns.
-        """
-    )
-
-
-if __name__ == "__main__":
-    main()
+)
