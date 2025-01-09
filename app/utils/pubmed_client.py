@@ -1,12 +1,27 @@
 from Bio import Entrez
 import os
 from dotenv import load_dotenv
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_openai import OpenAIEmbeddings
+import json
 
 # Load environment variables
 load_dotenv()
 Entrez.email = os.getenv("EMAIL")
 
-def search_pubmed(query, max_results=10):
+class Document:
+    """Represents a document with an abstract, metadata, and a unique identifier."""
+    
+    def __init__(self, page_content: str, metadata: dict, doc_id: str):
+        self.page_content = page_content  # The abstract text
+        self.metadata = metadata  # A dictionary with link, pubmed_id, and title
+        self.id = doc_id  # Unique document identifier
+    
+    def __repr__(self):
+        """String representation of the Document object."""
+        return f"Document(id={self.id}, page_content={self.page_content[:100]}..., metadata={self.metadata})"
+
+def search_pubmed(query: str, max_results: int = 10) -> list:
     """
     Search PubMed for article IDs based on a query.
     
@@ -22,7 +37,7 @@ def search_pubmed(query, max_results=10):
     handle.close()
     return results.get('IdList', [])
 
-def fetch_details(pubmed_ids):
+def fetch_details(pubmed_ids: list) -> dict:
     """
     Fetch metadata for PubMed articles by IDs.
     
@@ -37,7 +52,7 @@ def fetch_details(pubmed_ids):
     handle.close()
     return records
 
-def format_results(articles):
+def format_results(articles: dict) -> list:
     """
     Format PubMed article metadata into structured responses.
     
@@ -61,3 +76,41 @@ def format_results(articles):
             "link": link
         })
     return results
+
+def rerank_results(articles: list, user_query: str) -> list:
+    """
+    Rerank PubMed articles based on the user query using embeddings and cosine similarity.
+    
+    Args:
+        articles (list): List of formatted article metadata.
+        user_query (str): The query provided by the user.
+
+    Returns:
+        list: Sorted PubMed article IDs based on relevance to the query.
+    """
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    
+    documents = [
+        Document(
+            page_content=" ".join(article["abstract"]),  # Abstract text as page content
+            metadata={
+                'source': article['link'],  # Source link
+                'pubmed_id': article['pubmed_id'],  # PubMed ID
+                'title': article['title']  # Article Title
+            },
+            doc_id=article['pubmed_id']  # PubMed ID as document ID
+        )
+        for article in articles
+    ]
+
+    # Create vector store from documents and query embeddings
+    vectorstore = InMemoryVectorStore.from_documents(documents=documents, embedding=embeddings)
+
+    # Use the vector store as a retriever and retrieve top-k documents
+    retriever = vectorstore.as_retriever(search_kwargs={'k': 20})
+    retrieved_documents = retriever.invoke(user_query)
+
+    # Extract sorted PubMed IDs from the retrieved documents
+    reranked_ids = [doc.id for doc in retrieved_documents]
+    
+    return reranked_ids

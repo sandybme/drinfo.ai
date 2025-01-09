@@ -29,7 +29,7 @@ def parse_query_with_llm(doctor_query: str) -> str:
     Do not return the question verbatim, return only the structured PubMed query if it's clinical.
     """
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant for PubMed query formulation."},
             {"role": "user", "content": prompt}
@@ -70,7 +70,7 @@ def summarize_with_llm(articles: list, user_query: str) -> str:
     {content}
     """
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "Summarize PubMed findings in an elaborate systematic way. Always include references as links."},
             {"role": "user", "content": prompt}
