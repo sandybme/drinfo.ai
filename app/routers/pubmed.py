@@ -1,13 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from sse_starlette.sse import EventSourceResponse
-from app.utils.pubmed_client import search_pubmed, fetch_details, format_results
+from app.utils.pubmed_client import search_pubmed, fetch_details, format_results, rerank_results
 from app.utils.openai_client import parse_query_with_llm, summarize_with_llm
 from app.models.request import QueryRequest
 from app.models.response import QueryResponse
-from app.database import insert_pubmed_article  # Importing insert function from database.py
+from app.database import insert_pubmed_article 
 import time
 import logging
 import json
+from langchain_openai import OpenAIEmbeddings
+from langchain_core.vectorstores import InMemoryVectorStore
+InMemoryVectorStore
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -46,8 +49,17 @@ async def generate_stream(request: QueryRequest):
         articles = fetch_details(pubmed_ids)
         formatted_articles = format_results(articles)
 
+        print(len(formatted_articles))
         # Send articles to the database (Database handling happens in database.py)
         formatted_json = json.dumps(formatted_articles, indent=2)
+        
+        reranked_ids= rerank_results(formatted_articles,request.user_message)
+        print(len(reranked_ids))
+        # print(formatted_articles)
+        sorted_articles = sorted(
+            formatted_articles,
+            key=lambda article: reranked_ids.index(article['pubmed_id']) 
+        )
         insert_pubmed_article(formatted_json)  # Inserting articles into the database
 
         fetch_time = time.time() - start_time  # Time taken for Step 3
@@ -56,7 +68,7 @@ async def generate_stream(request: QueryRequest):
 
         # Step 4: Summarize results
         start_time = time.time()  # Start time for Step 4
-        summary = summarize_with_llm(formatted_articles, request.user_message)
+        summary = summarize_with_llm(sorted_articles, request.user_message)
         summary_time = time.time() - start_time  # Time taken for Step 4
 
         logger.info(f"Step 4 completed in {summary_time:.2f} seconds. Summary generated.")

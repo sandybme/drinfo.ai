@@ -1,10 +1,23 @@
 from Bio import Entrez
 import os
 from dotenv import load_dotenv
+from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_openai import OpenAIEmbeddings
+
 
 # Load environment variables
 load_dotenv()
 Entrez.email = os.getenv("EMAIL")
+
+class Document:
+    def __init__(self, page_content: str, metadata: dict, doc_id: str):
+        self.page_content = page_content  # The abstract text
+        self.metadata = metadata  # A dictionary with link, pubmed_id, and title
+        self.id = doc_id  # Adding a unique ID field
+    
+    def __repr__(self):
+        return f"Document(id={self.id}, page_content={self.page_content[:100]}..., metadata={self.metadata})"  # Show first 100 chars of page_content
+
 
 def search_pubmed(query, max_results=10):
     """
@@ -61,3 +74,32 @@ def format_results(articles):
             "link": link
         })
     return results
+
+def rerank_results(articles,user_query):
+
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    
+    documents = [
+    Document(
+        page_content=" ".join(article["abstract"]),  # The abstract as page content
+        metadata={
+            'source': article['link'],  # The link as source
+            'pubmed_id': article['pubmed_id'],  # PubMed ID
+            'title': article['title']  # Article Title
+        },
+        doc_id= article['pubmed_id']  # Using PubMed ID as the unique ID for the document
+    )
+
+    for article in articles ]
+    # print(len(documents))
+
+    vectorstore = InMemoryVectorStore.from_documents(
+    documents=documents,
+    embedding=embeddings,
+)
+# # Use the vectorstore as a retriever
+    retriever = vectorstore.as_retriever(search_kwargs={'k': 20})
+    retrieved_documents = retriever.invoke(user_query)
+    # print(len(retrieved_documents))
+    reranked_ids = [article.id for article in retrieved_documents]
+    return reranked_ids
