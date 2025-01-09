@@ -30,6 +30,7 @@ def parse_query_with_llm(doctor_query: str) -> str:
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
+        temperature= 0.2,
         messages=[
             {"role": "system", "content": "You are a helpful assistant for PubMed query formulation."},
             {"role": "user", "content": prompt}
@@ -71,6 +72,7 @@ def summarize_with_llm(articles: list, user_query: str) -> str:
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
+        temperature= 0.2,
         messages=[
             {"role": "system", "content": "Summarize PubMed findings in an elaborate systematic way. Always include references as links."},
             {"role": "user", "content": prompt}
