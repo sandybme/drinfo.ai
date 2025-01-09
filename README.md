@@ -88,6 +88,8 @@ docker run -d -p 8000:8000 -p 8501:8501 -e ENV=L --name drinfo-ai docker-user-id
 
 - Install the dependencies by running:
 ```bash
+git clone https://github.com/sandybme/drinfo.ai.git
+cd drinfo.ai
 pip install -r requirements.txt
 ```
 
