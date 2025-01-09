@@ -65,6 +65,16 @@ docker rm drinfo-ai
 
 ## 2. Running the App Locally
 
+### Build the Docker Image
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t docker-user-id/drinfo-ai:latest --build-arg ENV=L --push .
+```
+
+- `--platform` specifies the platform for which the image is built (amd64, arm64).
+- `--build-arg ENV=L` sets the environment to local during the build.
+- `--push` pushes the image to Docker Hub after building.
+
 ### Using Docker Container:
 - **Run the Docker container** in detached mode:
 ```bash
